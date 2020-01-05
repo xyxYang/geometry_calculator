@@ -7,6 +7,7 @@
 
 
 import math
+import copy
 import data_define as df
 
 
@@ -83,6 +84,51 @@ def calc_nearest_point_on_line_segment(point, s_point, e_point):
     :param e_point: end point of line segment (longitude, latitude)
     :return: point on line segment (longitude, latitude)
     """
-    # TODO
+    if is_same_point(s_point, e_point):
+        return copy.deepcopy(s_point)
+    if is_same_point(point, s_point):
+        return copy.deepcopy(s_point)
+    if is_same_point(point, e_point):
+        return copy.deepcopy(e_point)
+
+    # otherwise use comp.graphics.algorithms Frequently Asked Questions method */
+    # (1)                AC dot AB
+    #               r = ---------
+    #                   ||AB||^2
+    #    r has the following meaning:
+    #    r=0 P = A
+    #    r=1 P = B
+    #    r<0 P is on the backward extension of AB
+    #    r>1 P is on the forward extension of AB
+    #    0<r<1 P is interior to AB
+    #
+    # A: point
+    # B: s_point
+    # C: e_point
+    s_vector_x = point[df.INDEX_LON] - s_point[df.INDEX_LON]
+    s_vector_y = point[df.INDEX_LAT] - s_point[df.INDEX_LAT]
+    line_vector_x = e_point[df.INDEX_LON] - s_point[df.INDEX_LON]
+    line_vector_y = e_point[df.INDEX_LAT] - s_point[df.INDEX_LAT]
+    r = (s_vector_x * line_vector_x + s_vector_y * line_vector_y) / (line_vector_x ** 2 + line_vector_y ** 2)
+
+    if r < 0.0:
+        return copy.deepcopy(s_point)
+    if r > 1.0:
+        return copy.deepcopy(e_point)
+
+    foot_point_x = s_point[df.INDEX_LON] + r * line_vector_x
+    foot_point_y = s_point[df.INDEX_LAT] + r * line_vector_y
+    return foot_point_x, foot_point_y
 
 
+def calc_point_to_line_distance(point, line):
+    """
+    :param point: point (longitude, latitude)
+    :param line: line [points]
+    :return: distance of point and line. the unit is metre
+    """
+    nearest_point = calc_nearest_point_on_line(point, line)
+    if nearest_point:
+        return calc_point_distance(point, nearest_point)
+    else:
+        return None
