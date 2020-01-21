@@ -9,6 +9,25 @@ import sys
 import ogr
 
 
+def create_featuredefn(field_names):
+    feat_defn = ogr.FeatureDefn()
+    fieldDef_list = create_fieldDef_list(field_names)
+    for fieldDef in fieldDef_list:
+        feat_defn.AddFieldDefn(fieldDef)
+    return feat_defn
+
+
+def create_fieldDef_list(field_names):
+    fieldDef_list = list()
+    for index in range(len(field_names)):
+        fieldDef = ogr.FieldDefn()
+        fieldDef.SetType(ogr.OFTString)
+        fieldDef.SetName(field_names[index])
+        fieldDef.SetWidth(20)
+        fieldDef_list.append(fieldDef)
+    return fieldDef_list
+
+
 def create_miffile(file_path, fieldDef_list) :
     ds_file = None
     ds_driver = None
