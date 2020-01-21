@@ -132,3 +132,57 @@ def calc_point_to_line_distance(point, line):
         return calc_point_distance(point, nearest_point)
     else:
         return None
+
+
+def calc_line_length(line):
+    """
+    :param line: line [points]
+    :return: length of line. the unit is metre
+    """
+    length = 0
+    for i in range(len(line) - 1):
+        length += calc_point_distance(line[i], line[i+1])
+    return length
+
+
+def split_line_by_length(line, length):
+    """
+    :param line: line [points]
+    :param length: length of one part
+    :return: lines [line]
+    """
+    pass
+
+
+def get_start_part_by_length(line, length):
+    """
+    :param line: line [points]
+    :param length: length of start part
+    :return: start part line
+    """
+    pass
+
+
+def get_end_part_by_length(line, length):
+    """
+    :param line: line [points]
+    :param length: length of end part
+    :return: end part line
+    """
+    pass
+
+
+def get_start_part_by_percent(line, percent):
+    """
+    :param line: line [points]
+    :param percent: percent of start part
+    :return: start part line
+    """
+
+
+def get_end_part_by_percent(line, percent):
+    """
+    :param line: line [points]
+    :param percent: percent of end part
+    :return: end part line
+    """
