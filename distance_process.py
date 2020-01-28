@@ -151,7 +151,30 @@ def split_line_by_length(line, length):
     :param length: length of one part
     :return: lines [line]
     """
-    pass
+    if len(line) <= 1 or length <= 0.0:
+        return list()
+
+    part_length = 0.0
+    part_line = list()
+    ret_lines = list()
+    for i in range(len(line) - 1):
+        pt1 = line[i]
+        pt2 = line[i + 1]
+        part_length += calc_point_distance(pt1, pt2)
+        part_line.append(pt1)
+        if part_length == length:
+            ret_lines.append(part_line)
+            part_line = [pt1]
+        elif part_length > length:
+            mid_pt = calc_mid_point_by_length(pt2, pt1, length - part_length)
+            part_line.append(mid_pt)
+            ret_lines.append(part_line)
+            part_line = [mid_pt]
+        else:
+            pass
+    part_line.append(line[-1])
+    ret_lines.append(part_line)
+    return ret_lines
 
 
 def get_start_part_by_length(line, length):
@@ -160,7 +183,25 @@ def get_start_part_by_length(line, length):
     :param length: length of start part
     :return: start part line
     """
-    pass
+    if len(line) <= 1 or length <= 0.0:
+        return list()
+
+    part_length = 0.0
+    part_line = list()
+    for i in range(len(line) - 1):
+        pt1 = line[i]
+        pt2 = line[i + 1]
+        part_length += calc_point_distance(pt1, pt2)
+        part_line.append(pt1)
+        if part_length == length:
+            break
+        elif part_length > length:
+            mid_pt = calc_mid_point_by_length(pt2, pt1, length - part_length)
+            part_line.append(mid_pt)
+            break
+        else:
+            pass
+    return part_line
 
 
 def get_end_part_by_length(line, length):
@@ -169,7 +210,25 @@ def get_end_part_by_length(line, length):
     :param length: length of end part
     :return: end part line
     """
-    pass
+    if len(line) <= 1 or length <= 0.0:
+        return list()
+
+    part_length = 0.0
+    part_line = list()
+    for i in range(len(line), 1):
+        pt1 = line[i]
+        pt2 = line[i - 1]
+        part_length += calc_point_distance(pt1, pt2)
+        part_line.append(pt1)
+        if part_length == length:
+            break
+        elif part_length > length:
+            mid_pt = calc_mid_point_by_length(pt2, pt1, length - part_length)
+            part_line.append(mid_pt)
+            break
+        else:
+            pass
+    return part_line
 
 
 def get_start_part_by_percent(line, percent):
@@ -178,6 +237,14 @@ def get_start_part_by_percent(line, percent):
     :param percent: percent of start part
     :return: start part line
     """
+    if percent <= 0.0:
+        return list()
+    if percent >= 1.0:
+        return line
+
+    line_length = calc_line_length(line)
+    part_length = line_length * percent
+    return get_start_part_by_length(line, part_length)
 
 
 def get_end_part_by_percent(line, percent):
@@ -186,3 +253,46 @@ def get_end_part_by_percent(line, percent):
     :param percent: percent of end part
     :return: end part line
     """
+    if percent <= 0.0:
+        return list()
+    if percent >= 1.0:
+        return line
+
+    line_length = calc_line_length(line)
+    part_length = line_length * percent
+    return get_end_part_by_length(line, part_length)
+
+
+def calc_mid_point_by_length(s_point, e_point, length):
+    """
+    :param s_point: start point (longitude, latitude)
+    :param e_point: end point (longitude, latitude)
+    :param length: length from start point
+    :return: mid point on line
+    """
+    line_length = calc_point_distance(s_point, e_point)
+    percent = length / line_length
+    return calc_mid_point_by_percent(s_point, e_point, percent)
+
+
+def calc_mid_point_by_percent(s_point, e_point, percent):
+    """
+    :param s_point: start point (longitude, latitude)
+    :param e_point: end point (longitude, latitude)
+    :param percent: percent from start point
+    :return: mid point on line
+    """
+    if percent <= 0.0:
+        return s_point
+    if percent >= 1.0:
+        return e_point
+
+    s_lon = s_point[df.INDEX_LON]
+    s_lat = s_point[df.INDEX_LAT]
+    e_lon = e_point[df.INDEX_LON]
+    e_lat = e_point[df.INDEX_LAT]
+    d_lon = e_lon - s_lon
+    d_lat = e_lat - s_lat
+    m_lon = s_lon + percent * d_lon
+    m_lat = s_lat + percent * d_lat
+    return m_lon, m_lat
