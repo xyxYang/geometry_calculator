@@ -11,6 +11,10 @@ import copy
 import data_define as df
 
 
+def eqaul(a, b):
+    return math.fabs(a - b) < 0.000000001
+
+
 def degree(r):
     """
     :param r: radian
@@ -26,7 +30,40 @@ def calc_line_angle(line):
     """
     if len(line) <= 1:
         return None
-    pass
+
+    s_pt = line[0]
+    e_pt = line[-1]
+    delta_lon = e_pt[df.INDEX_LON] - s_pt[df.INDEX_LON]
+    delta_lat = e_pt[df.INDEX_LAT] - s_pt[df.INDEX_LAT]
+
+    if eqaul(delta_lon, 0.0) and eqaul(delta_lat, 0.0):
+        return 0.0
+
+    if eqaul(delta_lat, 0.0):
+        if delta_lon > 0.0:
+            return 90.0
+        else:
+            return 270.0
+
+    if eqaul(delta_lon, 0.0):
+        if delta_lat > 0.0:
+            return 0.0
+        else:
+            return 180.0
+
+    if delta_lat > 0.0:
+        if delta_lon > 0.0:
+            return degree(math.atan(delta_lon / delta_lat))
+        else:
+            return 360.0 - degree(math.atan(delta_lon / delta_lat))
+    else:
+        if delta_lon > 0.0:
+            return 180.0 - degree(math.atan(delta_lon / delta_lat))
+        else:
+            return 180.0 + degree(math.atan(delta_lon / delta_lat))
+
+    return 0.0
+
 
 
 def calc_line2line_angle(line1, line2):
