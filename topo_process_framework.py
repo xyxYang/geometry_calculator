@@ -10,6 +10,8 @@ import sys
 import ogr
 
 import pyqtree
+import data_define as df
+import distance_process
 
 
 class Node(object):
@@ -44,8 +46,53 @@ class Link(object):
 
 
 class TopoFramework(object):
-    def __init__(self):
-        pass
+    def __init__(self, road_layer):
+        self.road_features = [feature for feature in road_layer]
+        self.link_list = list()
+        self.node_list = list()
 
     def __del__(self):
-        pass
+        for feature in self.road_features:
+            feature.Destory()
+
+    def init_topology(self):
+        # init spatial index
+        qt_box = None
+        for feature in self.road_features:
+            box = get_feature_box(feature)
+            qt_box = max(qt_box, box) if qt_box else box
+        spatial_index = pyqtree.Index(qt_box)
+
+        # add link feature in index
+        for feature in self.road_features:
+            box = get_feature_box(feature)
+            link = Link(feature)
+            spatial_index.insert(link, box)
+            self.link_list.append(link)
+
+        # build topology relationship
+        for link in self.link_list:
+            pass
+
+
+def get_feature_box(feature, buffer=0.0):
+    return get_geometry_box(feature.GetGeometryRef(), buffer)
+
+
+def get_geometry_box(geometry, buffer=0.0):
+    # return [x_min, y_min, x_max, y_max]
+    box = [0, 0, 0, 0]
+    if geometry is None or geometry.IsEmpty():
+        return box
+    env = list(geometry.GetEnvelope())
+    box = [env[0] - buffer, env[2] - buffer, env[1] + buffer, env[3] + buffer]
+    return box
+
+
+def max_box(box1, box2):
+    # box [x_min, y_min, x_max, y_max]
+    x_min = min(box1[0], box2[0])
+    y_min = min(box1[1], box2[1])
+    x_max = max(box1[2], box2[2])
+    y_max = max(box1[3], box2[3])
+    return [x_min, y_min, x_max, y_max]
