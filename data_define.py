@@ -7,3 +7,4 @@
 INDEX_LON = 0   # point longitude index
 INDEX_LAT = 1   # point latitude index
 SAME_POINT_DISTANCE = 0.1  # same point distance limit
+ZERO_THRESHOLD = 0.00000001  # same float limit
