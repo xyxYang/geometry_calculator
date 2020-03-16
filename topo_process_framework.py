@@ -12,6 +12,7 @@ import ogr
 import pyqtree
 import data_define as df
 import distance_process
+import file_operator
 
 
 class Node(object):
@@ -50,6 +51,7 @@ class TopoFramework(object):
         self.road_features = [feature for feature in road_layer]
         self.link_list = list()
         self.node_list = list()
+        self.spatial_index = None
 
     def __del__(self):
         for feature in self.road_features:
@@ -61,18 +63,47 @@ class TopoFramework(object):
         for feature in self.road_features:
             box = get_feature_box(feature)
             qt_box = max(qt_box, box) if qt_box else box
-        spatial_index = pyqtree.Index(qt_box)
+        self.spatial_index = pyqtree.Index(qt_box)
 
         # add link feature in index
         for feature in self.road_features:
             box = get_feature_box(feature)
             link = Link(feature)
-            spatial_index.insert(link, box)
+            self.spatial_index.insert(link, box)
             self.link_list.append(link)
 
         # build topology relationship
         for link in self.link_list:
-            pass
+            geometry = link.feature.GetGeometryRef()
+            points = geometry.GetPoints()
+            s_point = points[0]
+            e_point = points[-1]
+            if not link.snode:
+                self._create_node(s_point)
+            if not link.enode:
+                self._create_node(e_point)
+
+    def _create_node(self, point):
+        if self.spatial_index is None:
+            return
+
+        feature = file_operator.create_feature({}, point_to_geometry(point))
+        node = Node(feature)
+
+        box = get_point_box(point, df.ZERO_THRESHOLD)
+        near_links = self.spatial_index.intersect(box)
+        for near_link in near_links:
+            near_geometry = near_link.feature.GetGeometryRef()
+            near_points = near_geometry.GetPoints()
+            near_s_point = near_points[0]
+            near_e_point = near_points[-1]
+            if is_same_point(near_s_point, point):
+                node.link_list.append(near_link)
+                near_link.snode = node
+            if is_same_point(near_e_point, point):
+                node.link_list.append(near_link)
+                near_link.enode = node
+        self.node_list.append(node)
 
 
 def get_feature_box(feature, buffer=0.0):
@@ -89,6 +120,12 @@ def get_geometry_box(geometry, buffer=0.0):
     return box
 
 
+def get_point_box(point, buffer=0.0):
+    x = point[0]
+    y = point[1]
+    return [x - buffer, y - buffer, x + buffer, y + buffer]
+
+
 def max_box(box1, box2):
     # box [x_min, y_min, x_max, y_max]
     x_min = min(box1[0], box2[0])
@@ -96,3 +133,16 @@ def max_box(box1, box2):
     x_max = max(box1[2], box2[2])
     y_max = max(box1[3], box2[3])
     return [x_min, y_min, x_max, y_max]
+
+
+def is_same_point(point1, point2):
+    # you can realize your version function
+    lon_same = point1[df.INDEX_LON] == point2[df.INDEX_LON]
+    lat_same = point1[df.INDEX_LAT] == point2[df.INDEX_LAT]
+    return lon_same and lat_same
+
+
+def point_to_geometry(point):
+    geometry = ogr.Geometry(ogr.wkbPoint)
+    geometry.AddPoint(point[df.INDEX_LON], point[df.INDEX_LAT])
+    return geometry
