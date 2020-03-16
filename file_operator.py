@@ -9,6 +9,16 @@ import sys
 import ogr
 
 
+def create_feature(field_dict, geometry):
+    field_names = field_dict.keys()
+    feat_defn = create_featuredefn(field_names)
+    feature = ogr.Feature(feat_defn)
+    for key, value in field_dict.items():
+        feature.SetField(key, value)
+    feature.SetGeometry(geometry)
+    return feature
+
+
 def create_featuredefn(field_names):
     feat_defn = ogr.FeatureDefn()
     fieldDef_list = create_fieldDef_list(field_names)
