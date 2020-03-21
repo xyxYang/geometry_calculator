@@ -47,6 +47,9 @@ class Link(object):
 
 
 class TopoFramework(object):
+    """
+    use road features to build topology relationship
+    """
     def __init__(self, road_layer):
         self.road_features = [feature for feature in road_layer]
         self.link_list = list()
@@ -104,6 +107,71 @@ class TopoFramework(object):
                 node.link_list.append(near_link)
                 near_link.enode = node
         self.node_list.append(node)
+
+    def get_links(self):
+        return self.link_list
+
+    def get_nodes(self):
+        return self.node_list
+
+
+class TopoFrameWork2(object):
+    """
+    use road features and node features to build relationship
+    """
+    def __init__(self, road_layer, node_layer):
+        self.road_features = [feature for feature in road_layer]
+        self.node_features = [feature for feature in node_layer]
+        self.key_node_dict = dict()
+        self.link_list = list()
+        self.node_list = list()
+
+    def __del__(self):
+        for feature in self.road_features:
+            feature.Destory()
+        for feature in self.node_features:
+            feature.Destory()
+
+    def init_topology(self):
+        # init node key relationship
+        for feature in self.node_features:
+            node = Node(feature)
+            key = self._get_node_key(feature)
+            self.key_node_dict[key] = node
+            self.node_list.append(node)
+
+        # build topology relationship
+        for feature in self.road_features:
+            snode_key = self._get_snode_key(feature)
+            enode_key = self._get_enode_key(feature)
+            snode = self.key_node_dict.get(snode_key, None)
+            enode = self.key_node_dict.get(enode_key, None)
+            link = Link(feature, snode, enode)
+            if snode:
+                snode.link_list.append(link)
+            if enode:
+                enode.link_list.append(link)
+
+    def _get_node_key(self, feature):
+        # use geometry as key. you can identify your own key.
+        geometry = feature.GetGeometryRef()
+        pt = geometry.GetPoint()
+        key = "|".join([str(pt[df.INDEX_LON]), str(pt[df.INDEX_LAT])])
+        return key
+
+    def _get_snode_key(self, feature):
+        # use geometry as key. you can identify your own key.
+        geometry = feature.GetGeometryRef()
+        pt = geometry.GetPoint(0)
+        key = "|".join([str(pt[df.INDEX_LON]), str(pt[df.INDEX_LAT])])
+        return key
+
+    def _get_enode_key(self, feature):
+        # use geometry as key. you can identify your own key.
+        geometry = feature.GetGeometryRef()
+        pt = geometry.GetPoint(geometry.GetPointCount() - 1)
+        key = "|".join([str(pt[df.INDEX_LON]), str(pt[df.INDEX_LAT])])
+        return key
 
 
 def get_feature_box(feature, buffer=0.0):
