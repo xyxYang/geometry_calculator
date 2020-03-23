@@ -28,7 +28,7 @@ def is_same_point(point1, point2):
     :param point2: second point (longitude, latitude)
     :return:
     """
-    return calc_point_distance(point1, point2) < df.SAME_POINT_DISTANCE
+    return calc_point_distance(point1, point2) <= df.SAME_POINT_DISTANCE
 
 
 def calc_point_distance(point1, point2):
