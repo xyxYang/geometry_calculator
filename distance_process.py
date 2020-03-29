@@ -22,6 +22,97 @@ def rad(d):
     return d * math.pi / 180.0
 
 
+def degree(r):
+    """
+    :param r: radian
+    :return: degree
+    """
+    return r * 180.0 / math.pi
+
+
+def lonlat_to_xyz(lon, lat):
+    """
+    :param lon: longitude
+    :param lat: latitude
+    :return: x, y, z in three dimension space
+    """
+    rad_lon = rad(lon)
+    rad_lat = rad(lat)
+    x = math.cos(rad_lat) * math.cos(rad_lon)
+    y = math.cos(rad_lat) * math.sin(rad_lon)
+    z = math.sin(rad_lat)
+    return x, y, z
+
+
+def xyz_to_lonlat(x, y, z):
+    """
+    :param x: x in three dimension space
+    :param y: y in three dimension space
+    :param z: z in three dimension space
+    :return: longitude, latitude
+    """
+    rad_lat = math.asin(z)
+    if y == 0.0 or math.cos(rad_lat) == 0.0:
+        rad_lon = 0.0
+    else:
+        rad_lon = math.acos(z / math.cos(rad_lat))
+        if math.asin(y / math.cos(rad_lat)) < 0.0:
+            rad_lon = - rad_lon
+    return rad_lon, rad_lat
+
+
+def calc_cross_product(vector1, vector2):
+    """
+    :param vector1: (x1, y1, z1)
+    :param vector2: (x2, y2, z2)
+    :return: cross product vector
+    """
+    x1, y1, z1 = vector1
+    x2, y2, z2 = vector2
+    x = y1 * z2 - y2 * z1
+    y = x2 * z1 - x1 * z2
+    z = x1 * y2 - x2 * y1
+    return x, y, z
+
+
+def calc_dot_product(vector1, vector2):
+    """
+    :param vector1: (x1, y1, z1)
+    :param vector2: (x2, y2, z2)
+    :return: dot product vector
+    """
+    ret = 0.0
+    for x1, x2 in zip(vector1, vector2):
+        ret += x1 * x2
+    return ret
+
+
+def calc_euclid_distance(vector):
+    """
+    :param vector: (x, y, z)
+    :return: euclid distance
+    """
+    ret = 0.0
+    for x in vector:
+        ret += x ** 2
+    return math.sqrt(ret)
+
+
+def is_same_direction(vector1, vector2):
+    """
+    :param vector1: (x1, y1, z1)
+    :param vector2: (x2, y2, z2)
+    :return: is two vector same direction
+    """
+    dot = calc_dot_product(vector1, vector2)
+    length1 = calc_euclid_distance(vector1)
+    length2 = calc_euclid_distance(vector2)
+    if math.fabs(math.fabs(dot) - math.fabs(length1 * length2)) < df.ZERO_THRESHOLD:
+        return True
+    else:
+        return False
+
+
 def is_same_point(point1, point2):
     """
     :param point1: first point (longitude, latitude)
@@ -91,34 +182,21 @@ def calc_nearest_point_on_line_segment(point, s_point, e_point):
     if is_same_point(point, e_point):
         return copy.deepcopy(e_point)
 
-    # otherwise use comp.graphics.algorithms Frequently Asked Questions method */
-    # (1)                AC dot AB
-    #               r = ---------
-    #                   ||AB||^2
-    #    r has the following meaning:
-    #    r=0 P = A
-    #    r=1 P = B
-    #    r<0 P is on the backward extension of AB
-    #    r>1 P is on the forward extension of AB
-    #    0<r<1 P is interior to AB
-    #
-    # A: point
-    # B: s_point
-    # C: e_point
-    s_vector_x = point[df.INDEX_LON] - s_point[df.INDEX_LON]
-    s_vector_y = point[df.INDEX_LAT] - s_point[df.INDEX_LAT]
-    line_vector_x = e_point[df.INDEX_LON] - s_point[df.INDEX_LON]
-    line_vector_y = e_point[df.INDEX_LAT] - s_point[df.INDEX_LAT]
-    r = (s_vector_x * line_vector_x + s_vector_y * line_vector_y) / (line_vector_x ** 2 + line_vector_y ** 2)
+    s_xyz = lonlat_to_xyz(s_point[df.INDEX_LON], s_point[df.INDEX_LAT])
+    e_xyz = lonlat_to_xyz(e_point[df.INDEX_LON], e_point[df.INDEX_LAT])
+    q_xyz = calc_cross_product(s_xyz, e_xyz)
+    p_xyz = lonlat_to_xyz(point[df.INDEX_LON], point[df.INDEX_LAT])
 
-    if r < 0.0:
-        return copy.deepcopy(s_point)
-    if r > 1.0:
-        return copy.deepcopy(e_point)
+    if is_same_direction(p_xyz, q_xyz):
+        return s_point
 
-    foot_point_x = s_point[df.INDEX_LON] + r * line_vector_x
-    foot_point_y = s_point[df.INDEX_LAT] + r * line_vector_y
-    return foot_point_x, foot_point_y
+    t_vector = calc_cross_product(p_xyz, q_xyz)
+    k = 1.0 / calc_euclid_distance(t_vector)
+    t_xyz = (k * t_vector[0], k * t_vector[1], k * t_vector[2])
+    t_point = xyz_to_lonlat(t_xyz[0], t_xyz[1], t_xyz[2])
+    if calc_point_distance(s_point, t_point) + calc_point_distance(e_point, t_point) > calc_point_distance(s_point, e_point):
+        t_point = (-t_point[df.INDEX_LON], -t_point[df.INDEX_LAT])
+    return t_point
 
 
 def calc_point_to_line_distance(point, line):
